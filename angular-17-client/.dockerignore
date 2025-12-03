@@ -1,0 +1,13 @@
+node_modules
+dist
+.angular
+.vscode
+.git
+.gitignore
+*.md
+npm-debug.log
+yarn-error.log
+coverage
+.editorconfig
+karma.conf.js
+.browserslistrc
