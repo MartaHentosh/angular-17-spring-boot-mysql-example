@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack CRUD (Create, Read, Update, Delete) web application that demonstrates a modern three-tier architecture. The application allows users to manage tutorials through a web interface, with all data persisted in a MySQL database.
+This is a full-stack CRUD (Create, Read, Update, Delete) web application that demonstrates a modern three-tier architecture. The application allows users to manage tutorials through a web interface, with all data persisted in a PostgreSQL database.
 
 ## What It Does
 
@@ -36,10 +36,10 @@ The application consists of three main layers:
   - `Tutorial`: Entity model with id, title, description, published fields
 - **Port**: 8080 (default) or 8081 (as configured)
 
-### 3. **Database (MySQL)**
-- **Version**: MySQL 8.0
+### 3. **Database (PostgreSQL)**
+- **Version**: PostgreSQL 15
 - **Database Name**: `testdb`
-- **Port**: 3306
+- **Port**: 5432
 - **Auto-schema**: Tables are automatically created/updated via Hibernate
 
 ## How to Run
@@ -48,17 +48,17 @@ The application consists of three main layers:
 - **Java 17** or higher
 - **Maven 3.6+**
 - **Node.js 18+** and npm
-- **MySQL 8.0** (or use Docker)
+- **PostgreSQL 15** (or use Docker)
 - **Angular CLI** (`npm install -g @angular/cli`)
 
 ### Option 1: Manual Setup
 
-#### Step 1: Start MySQL Database
+#### Step 1: Start PostgreSQL Database
 ```bash
 # Using Docker (recommended)
-docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_DATABASE=testdb -p 3306:3306 -d mysql:8.0
+docker run --name postgres-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=12345678 -e POSTGRES_DB=testdb -p 5432:5432 -d postgres:15-alpine
 
-# Or use your existing MySQL instance
+# Or use your existing PostgreSQL instance
 # Create database: CREATE DATABASE testdb;
 ```
 
@@ -69,9 +69,9 @@ mvn spring-boot:run
 ```
 The API will be available at `http://localhost:8080/api/tutorials`
 
-**Note**: Update `application.properties` if your MySQL credentials differ from:
-- Username: `root`
-- Password: `123456`
+**Note**: Update `application.properties` if your PostgreSQL credentials differ from:
+- Username: `postgres`
+- Password: `12345678`
 - Database: `testdb`
 
 #### Step 3: Start Angular Frontend
@@ -91,7 +91,7 @@ docker-compose up --build
 ```
 
 This will start:
-- MySQL database on port `3306`
+- PostgreSQL database on port `5432`
 - Spring Boot API on port `8080`
 - Angular frontend on port `4200`
 
@@ -117,7 +117,7 @@ The backend exposes the following REST endpoints:
 ## Project Structure
 
 ```
-angular-17-spring-boot-mysql-example/
+angular-17-spring-boot-postgresql-example/
 ├── angular-17-client/          # Angular frontend application
 │   ├── src/app/
 │   │   ├── components/         # UI components
@@ -139,9 +139,9 @@ angular-17-spring-boot-mysql-example/
 ### Backend Configuration
 Edit `spring-boot-server/src/main/resources/application.properties`:
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/testdb?useSSL=false
-spring.datasource.username=root
-spring.datasource.password=123456
+spring.datasource.url=jdbc:postgresql://localhost:5432/testdb
+spring.datasource.username=postgres
+spring.datasource.password=12345678
 ```
 
 ### Frontend Configuration
@@ -149,7 +149,7 @@ The Angular app connects to the backend API. Update the service URL in `tutorial
 
 ## Troubleshooting
 
-- **Connection refused**: Ensure MySQL is running and credentials match
+- **Connection refused**: Ensure PostgreSQL is running and credentials match
 - **Port conflicts**: Change ports in `application.properties` (backend) or `docker-compose.yml`
 - **CORS errors**: Backend has `@CrossOrigin(origins = "*")` enabled
 - **Database not found**: Create the `testdb` database manually or let Docker create it
@@ -158,7 +158,7 @@ The Angular app connects to the backend API. Update the service URL in `tutorial
 
 - **Frontend**: Angular 17, TypeScript, Bootstrap 4, RxJS
 - **Backend**: Spring Boot 3.1.5, Spring Data JPA, Java 17
-- **Database**: MySQL 8.0
+- **Database**: PostgreSQL 15
 - **Build Tools**: Maven, npm, Angular CLI
 - **Containerization**: Docker, Docker Compose
 

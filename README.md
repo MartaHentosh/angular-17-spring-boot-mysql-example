@@ -1,13 +1,13 @@
-# Spring Boot + Angular 17 + MySQL CRUD example
+# Spring Boot + Angular 17 + PostgreSQL CRUD example
 
-Full-stack Angular 17 + Spring Boot Tutorial CRUD Application with MySQL database in that:
+Full-stack Angular 17 + Spring Boot Tutorial CRUD Application with PostgreSQL database in that:
 - Each Tutorial has id, title, description, published status.
 - We can create, retrieve, update, delete Tutorials.
 - We can also find Tutorials by title.
 
 ![angular-17-spring-boot-mysql-example-crud.png](angular-17-spring-boot-mysql-example-crud.png)
 
-> [Angular 17 + Spring Boot + MySQL CRUD example](https://www.bezkoder.com/spring-boot-angular-17-mysql/)
+> [Angular 17 + Spring Boot + PostgreSQL CRUD example](https://www.bezkoder.com/spring-boot-angular-17-mysql/)
 
 Run both Back-end & Front-end in one place:
 > [Integrate Angular with Spring Boot Rest API](https://www.bezkoder.com/integrate-angular-12-spring-boot/)
