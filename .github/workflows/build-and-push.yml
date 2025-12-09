@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
+  GHCR_REGISTRY: ghcr.io
+  HARBOR_REGISTRY: demo.goharbor.io  
+  HARBOR_PROJECT: angular-17-spring-boot-mysql-example 
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -15,6 +17,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - service: backend
+            context: ./spring-boot-server
+            dockerfile: ./spring-boot-server/Dockerfile
+          - service: frontend  
+            context: ./angular-17-client
+            dockerfile: ./angular-17-client/Dockerfile
 
     steps:
       - name: Checkout repository
@@ -28,18 +39,35 @@ jobs:
         with:
           driver: docker-container 
 
-      - name: Log in to the Container registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ env.GHCR_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Define image metadata
-        id: meta
+      - name: Log in to Harbor Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Define image metadata for GHCR
+        id: meta-ghcr
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+
+      - name: Define image metadata for Harbor
+        id: meta-harbor
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ matrix.service }}
           tags: |
             type=sha,format=long,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
@@ -47,28 +75,69 @@ jobs:
 
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
 
-      - name: Build and push Docker image
+      - name: Build and push to GHCR
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta-ghcr.outputs.tags }}
+          labels: ${{ steps.meta-ghcr.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-      - name: Extract first tag
+      - name: Build and push to Harbor
+        id: harbor-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta-harbor.outputs.tags }}
+          labels: ${{ steps.meta-harbor.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+
+      - name: Extract Harbor image details
+        id: harbor-image
+        run: |
+          FIRST_TAG=$(echo "${{ steps.meta-harbor.outputs.tags }}" | head -n 1)
+          REPO_TAG=$(echo "$FIRST_TAG" | cut -d'/' -f3-)
+          REPO=$(echo "$REPO_TAG" | cut -d':' -f1)
+          TAG=$(echo "$REPO_TAG" | cut -d':' -f2)
+          
+          echo "project=${{ env.HARBOR_PROJECT }}" >> $GITHUB_OUTPUT
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "full_image=$FIRST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Wait for Harbor deployment
+        uses: kyberorg/wait_for_harbor@v0.1
+        with:
+          hostname: ${{ env.HARBOR_REGISTRY }}
+          schema: 'https'
+          robot: ${{ secrets.HARBOR_USERNAME }}
+          token: ${{ secrets.HARBOR_PASSWORD }}
+          imageProject: ${{ steps.harbor-image.outputs.project }}
+          imageRepo: ${{ steps.harbor-image.outputs.repo }}
+          imageTag: ${{ steps.harbor-image.outputs.tag }}
+          imageSha: ${{ steps.harbor-build.outputs.digest }}
+          interval: 5
+          timeout: 300  
+
+      - name: Extract first GHCR tag for security scan
         id: first_tag
         run: |
-          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          FIRST_TAG=$(echo "${{ steps.meta-ghcr.outputs.tags }}" | head -n 1)
           echo "tag=$FIRST_TAG" >> $GITHUB_OUTPUT
 
       - name: Run Trivy vulnerability scanner (fail only on CRITICAL)
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
-          image-ref: ${{ steps.meta.outputs.tags }}
+          image-ref: ${{ steps.first_tag.outputs.tag }}
           format: table
           exit-code: 1
           vuln-type: 'os,library'
