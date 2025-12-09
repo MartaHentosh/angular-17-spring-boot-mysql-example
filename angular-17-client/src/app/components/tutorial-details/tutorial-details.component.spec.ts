@@ -1,5 +1,7 @@
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { ActivatedRoute } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { TutorialDetailsComponent } from './tutorial-details.component';
 
 describe('TutorialDetailsComponent', () => {
@@ -8,10 +10,21 @@ describe('TutorialDetailsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [TutorialDetailsComponent]
+      imports: [HttpClientTestingModule, RouterTestingModule],
+      declarations: [TutorialDetailsComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              params: { id: '123' }
+            }
+          }
+        }
+      ]
     })
     .compileComponents();
-    
+
     fixture = TestBed.createComponent(TutorialDetailsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
