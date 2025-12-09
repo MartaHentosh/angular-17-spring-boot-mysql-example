@@ -1,7 +1,10 @@
 name: Deploy images to Github container registry
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+    - main
+    - workflow-v2
 
 env:
   REGISTRY: ghcr.io
