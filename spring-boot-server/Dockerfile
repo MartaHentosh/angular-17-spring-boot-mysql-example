@@ -1,24 +1,26 @@
-# Stage 1: Build 
+# Stage 1: Build
 FROM maven:3.9-eclipse-temurin-17 AS build
-
-WORKDIR /app
+WORKDIR /workspace
 
 COPY pom.xml .
-RUN mvn clean dependency:go-offline -B
+RUN mvn -B -DskipTests dependency:go-offline
 
 COPY src ./src
+RUN mvn -B -DskipTests package
 
-#RUN mvn clean package -DskipTests
-
-
-# Stage 2: Run the application
+# Stage 2: Run
 FROM eclipse-temurin:17-jre-alpine
-
 WORKDIR /app
 
-# Copy the JAR from build stage
-COPY --from=build /app/target/*-SNAPSHOT.jar /app/app.jar
+# copy the repackaged spring boot jar (exclude .jar.original)
+COPY --from=build /workspace/target/*.jar /tmp/
+
+RUN set -eux; \
+    ls -la /tmp; \
+    JAR="$(ls /tmp/*.jar | grep -v '\.jar\.original$' | head -n 1)"; \
+    test -n "$JAR"; \
+    cp "$JAR" /app/app.jar; \
+    rm -rf /tmp/*.jar
 
 EXPOSE 8080
-# Run the application
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]

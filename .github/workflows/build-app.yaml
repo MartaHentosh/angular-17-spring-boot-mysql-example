@@ -45,6 +45,16 @@ jobs:
         cache: 'npm'
         cache-dependency-path: ${{ matrix.context }}/package-lock.json
 
+    - name: Build backend jar
+      if: matrix.name == 'backend'
+      working-directory: ${{ matrix.context }}
+      run: mvn -B -DskipTests package
+
+    - name: Show backend target artifacts
+      if: matrix.name == 'backend'
+      working-directory: ${{ matrix.context }}
+      run: ls -la target
+
     - name: Run backend tests
       if: matrix.name == 'backend'
       working-directory: ${{ matrix.context }}
