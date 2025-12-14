@@ -4,7 +4,7 @@ on:
   push:
     branches:
     - main
-    - workflow-v2
+    - fixes-for-ansible
 
 env:
   REGISTRY: ghcr.io
